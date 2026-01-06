@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Chat</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="chat"></div>
+<textarea id="input" placeholder="Écris ton message..."></textarea>
+<button onclick="send()">Envoyer</button>
+
+<script>
+let messages = [];
+async function send(){
+  const input = document.getElementById("input");
+  const msg = input.value.trim();
+  if(!msg) return;
+  input.value = "";
+  messages.push({role:"user", content: msg});
+  render();
+
+  const res = await fetch("http://localhost:3000/chat",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({message: msg, history: messages})
+  });
+  const data = await res.json();
+  messages.push({role:"assistant", content: data.response});
+  render();
+}
+function render(){
+  const chat = document.getElementById("chat");
+  chat.innerHTML="";
+  messages.forEach(m=>{
+    const d=document.createElement("div");
+    d.className=m.role;
+    d.textContent=m.content;
+    chat.appendChild(d);
+  });
+}
+</script>
+</body>
+</html>
