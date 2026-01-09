@@ -1,44 +1,64 @@
 
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Chat</title>
-<link rel="stylesheet" href="style.css">
+  <title>PaffIA Chat</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="chat"></div>
-<textarea id="input" placeholder="Écris ton message..."></textarea>
-<button onclick="send()">Envoyer</button>
+<div id="app">
+  <div id="sidebar">
+    <h2>PaffIA</h2>
+    <button class="gradient-red primary" onclick="newChat()">+ New Chat</button>
+    <ul id="history"></ul>
+  </div>
+
+  <div id="chat">
+    <div id="messages"></div>
+    <div id="input">
+      <input id="msg" placeholder="Type a message..." />
+      <button onclick="send()">Send</button>
+    </div>
+  </div>
+</div>
 
 <script>
-let messages = [];
-async function send(){
-  const input = document.getElementById("input");
-  const msg = input.value.trim();
-  if(!msg) return;
-  input.value = "";
-  messages.push({role:"user", content: msg});
-  render();
+let history = [];
 
-  const res = await fetch("http://localhost:3000/chat",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({message: msg, history: messages})
-  });
-  const data = await res.json();
-  messages.push({role:"assistant", content: data.response});
-  render();
+function addMessage(role, text) {
+  const div = document.createElement("div");
+  div.className = "message " + role;
+
+  if (text.includes("```")) {
+    const pre = document.createElement("pre");
+    const btn = document.createElement("button");
+    btn.innerText = "Copy";
+    btn.className = "copy-btn";
+    btn.onclick = () => navigator.clipboard.writeText(text.replace(/```/g,""));
+    pre.appendChild(btn);
+    pre.appendChild(document.createTextNode(text.replace(/```/g,"")));
+    div.appendChild(pre);
+  } else {
+    div.innerText = text;
+  }
+
+  document.getElementById("messages").appendChild(div);
 }
-function render(){
-  const chat = document.getElementById("chat");
-  chat.innerHTML="";
-  messages.forEach(m=>{
-    const d=document.createElement("div");
-    d.className=m.role;
-    d.textContent=m.content;
-    chat.appendChild(d);
-  });
+
+function send() {
+  const input = document.getElementById("msg");
+  addMessage("user", input.value);
+  fetch("/bridge", {
+    method: "POST",
+    body: JSON.stringify({message: input.value, history: history})
+  })
+  .then(r => r.text())
+  .then(t => addMessage("ai", t));
+  input.value = "";
+}
+
+function newChat() {
+  document.getElementById("messages").innerHTML = "";
 }
 </script>
 </body>
